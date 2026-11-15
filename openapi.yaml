@@ -1,0 +1,103 @@
+openapi: 3.0.0
+info:
+  title: peach card controls api
+  version: 1.0.0
+servers:
+  - url: https://virtserver.swaggerhub.com/erp-8ac/peach-card-controls/1.0.0
+    description: swagger hub api auto mocking
+security:
+  - bearerAuth: []
+paths:
+  /cards/{cardId}/status:
+    get:
+      summary: get card status
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: card found
+          content:
+            application/json:
+              example:
+                cardId: crd_4821
+                last4: "4821"
+                status: ACTIVE
+                statusChangedAt: "2026-11-10T18:30:00Z"
+        '401':
+          description: not logged in
+        '404':
+          description: card not found
+        '500':
+          description: server error
+  /cards/{cardId}/freeze:
+    post:
+      summary: freeze a card
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              reason: MISPLACED
+              requestedBy: CUSTOMER_APP
+      responses:
+        '200':
+          description: card frozen
+          content:
+            application/json:
+              example:
+                cardId: crd_4821
+                last4: "4821"
+                status: TEMPORARY_BLOCK
+                statusChangedAt: "2026-11-13T19:00:00Z"
+        '400':
+          description: reason missing or not allowed
+        '401':
+          description: not logged in
+        '404':
+          description: card not found
+        '409':
+          description: card cannot be frozen in its current status
+        '500':
+          description: server error
+  /cards/{cardId}/unfreeze:
+    post:
+      summary: unfreeze a card
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: card unfrozen
+          content:
+            application/json:
+              example:
+                cardId: crd_4821
+                last4: "4821"
+                status: ACTIVE
+                statusChangedAt: "2026-11-13T21:20:00Z"
+        '401':
+          description: not logged in
+        '404':
+          description: card not found
+        '409':
+          description: card is not frozen
+        '500':
+          description: server error
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer

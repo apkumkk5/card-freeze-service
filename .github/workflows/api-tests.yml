@@ -1,28 +1,40 @@
 name: API tests
-
 on:
   push:
   workflow_dispatch:
-
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Get the code
         uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
       - name: Check the API spec is valid
         run: npx --yes @apidevtools/swagger-cli@4.0.4 validate openapi.yaml
-
       - name: Start the API
         run: |
           node server.js &
           for i in $(seq 1 20); do curl -sf http://localhost:3000/health && break; sleep 1; done
-
       - name: Run the Postman tests
         run: npx --yes newman@6.1.0 run card-freeze-tests.postman_collection.json
+
+      - name: Build the JMeter image
+        run: docker build -t card-jmeter jmeter
+      - name: Run the load test
+        run: docker run --rm --network host -v "${{ github.workspace }}:/tests" card-jmeter -n -t card-status-load-test.jmx -l results.jtl -e -o report
+      - name: Check for errors
+        run: |
+          if grep -q ',false,' results.jtl; then
+            echo "Load test had failed requests"
+            exit 1
+          fi
+          echo "No failed requests"
+      - name: Save the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-report
+          path: report
